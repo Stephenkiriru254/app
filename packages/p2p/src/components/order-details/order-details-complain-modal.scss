@@ -1,0 +1,30 @@
+.order-details-complain-modal {
+    &__body {
+        flex-grow: 1;
+
+        @include mobile {
+            flex-direction: column;
+        }
+    }
+
+    &__explanation {
+        background-color: var(--general-section-1);
+        margin-top: 1.6rem;
+        padding: 1.6rem;
+
+        @include mobile {
+            border-radius: $BORDER_RADIUS;
+            margin: 1.6rem;
+        }
+
+        @include tablet-up {
+            border-radius: 8px;
+        }
+    }
+}
+
+.dc-modal__container_order-details-complain-modal {
+    .dc-modal-footer {
+        border-top: solid 2px var(--general-section-1);
+    }
+}

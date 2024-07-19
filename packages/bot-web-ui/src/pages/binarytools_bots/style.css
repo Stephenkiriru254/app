@@ -1,0 +1,7 @@
+.tab__dashboard__content .binarytools-preview-panel--active{
+    display: none;
+}
+
+.binarytools_tab__dashboard__header--listed{
+    width: 48%;
+}

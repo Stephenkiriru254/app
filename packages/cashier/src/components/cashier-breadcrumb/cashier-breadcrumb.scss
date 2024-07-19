@@ -1,0 +1,7 @@
+.cashier-breadcrumb {
+    width: 100%;
+
+    ul > *:not(:last-child) {
+        cursor: pointer;
+    }
+}
