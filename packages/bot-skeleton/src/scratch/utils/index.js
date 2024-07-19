@@ -63,15 +63,32 @@ export const validateErrorOnBlockDelete = () => {
     }
 };
 
-export const updateWorkspaceName = () => {
+const subPageValue = () => {
+    let currentURL = window.location.href;
+    let parts = currentURL.split('#');
+    let analysisPage = parts[1];
+    return analysisPage;
+};
+
+export const updateWorkspaceName = active_tab => {
+    document.title = 'DollarHub';
     if (!DBotStore?.instance) return;
     const { load_modal } = DBotStore.instance;
     const file_name = load_modal?.dashboard_strategies?.[0]?.name ?? config.default_file_name;
-    if (document.title.indexOf('-') > -1) {
-        const string_to_replace = document.title.substr(document.title.indexOf('-'));
-        const new_document_title = document.title.replace(string_to_replace, `- ${file_name}`);
 
-        document.title = new_document_title;
+    if (subPageValue() === 'analysis_page') {
+        document.title += ` - ${subPageValue()}`;
+        return;
+    }
+    if (active_tab == 3) {
+        document.title += ` - ATrader`;
+        return;
+    }
+
+    if (document.title.indexOf('-') > -1) {
+        // const string_to_replace = document.title.substr(document.title.indexOf('-'));
+        // const new_document_title = document.title.replace(string_to_replace, `- ${file_name}`);
+        document.title += ` - ${file_name}`;
     } else {
         document.title += ` - ${file_name}`;
     }

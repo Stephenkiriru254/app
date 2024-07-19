@@ -4,7 +4,7 @@ import { updateWorkspaceName } from '@deriv/bot-skeleton';
 import dbot from '@deriv/bot-skeleton/src/scratch/dbot';
 import { initTrashCan } from '@deriv/bot-skeleton/src/scratch/hooks/trashcan';
 import { api_base } from '@deriv/bot-skeleton/src/services/api/api-base';
-import { DesktopWrapper, Dialog, MobileWrapper, Tabs } from '@deriv/components';
+import { DesktopWrapper, Dialog, MobileWrapper, Tabs, UILoader } from '@deriv/components';
 import { observer, useStore } from '@deriv/stores';
 import { Localize, localize } from '@deriv/translations';
 import { Analytics } from '@deriv-com/analytics';
@@ -12,19 +12,31 @@ import TradingViewModal from 'Components/trading-view-chart/trading-view-modal';
 import { DBOT_TABS, TAB_IDS } from 'Constants/bot-contents';
 import { useDBotStore } from 'Stores/useDBotStore';
 import RunPanel from '../../components/run-panel';
-import StrategyNotification from '../../components/strategy-notification';
-import AnalysisTool from '../analysistool';
-import Strategies from '../strategies';
 import ChartModal from '../chart/chart-modal';
 import Chart from '../chart';
 import Dashboard from '../dashboard';
 import BinaryToolsBots from '../binarytools_bots';
+import StrategyNotification from '../../components/strategy-notification';
+import AnalysisTool from '../analysistool';
+import Strategies from '../strategies';
 import RunStrategy from '../dashboard/run-strategy';
 import Tutorial from '../tutorials';
 import { tour_list } from '../tutorials/dbot-tours/utils';
 import CopyTrading from '../copytrading';
 import TradingView from '../trading_view';
 import AnalysisPage from '../analysis';
+import Loadable from 'react-loadable';
+import { useWS } from '@deriv/shared';
+import { TCoreStores } from '@deriv/stores/types';
+import { TWebSocket } from 'Types';
+import { BrowserRouter as Router } from 'react-router-dom';
+import ReactGA from 'react-ga4';
+import './style.css';
+
+type Apptypes = {
+    root_store: TCoreStores;
+    WS: TWebSocket;
+};
 
 const AppWrapper = observer(() => {
     const { dashboard, load_modal, run_panel, quick_strategy, summary_card } = useDBotStore();
@@ -38,17 +50,24 @@ const AppWrapper = observer(() => {
         setActiveTour,
         setTourDialogVisibility,
     } = dashboard;
+    const RootStore = useStore();
+    const WS = useWS() as TWebSocket;
+    const passthrough: Apptypes = {
+        root_store: RootStore,
+        WS: WS,
+    };
+
     const { onEntered, dashboard_strategies } = load_modal;
     const { is_dialog_open, is_drawer_open, dialog_options, onCancelButtonClick, onCloseDialog, onOkButtonClick } =
         run_panel;
     const { is_open } = quick_strategy;
     const { cancel_button_text, ok_button_text, title, message } = dialog_options as { [key: string]: string };
     const { clear } = summary_card;
-    const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
+    const { DASHBOARD, BOT_BUILDER, CHART } = DBOT_TABS;
     const init_render = React.useRef(true);
     const { ui } = useStore();
     const { url_hashed_values, is_mobile } = ui;
-    const hash = ['dashboard', 'bot_builder', 'pro-analysistool','binarytools_bots', 'copytrading', 'analysistool', 'strategies', 'tradingview', 'chart', 'tutorial'];
+    const hash = ['dashboard', 'bot_builder', 'pro-analysistool','binarytools_bots', 'manual', 'copytrading', 'analysistool', 'strategies', 'tradingview', 'chart', 'tutorial'];
 
     let tab_value: number | string = active_tab;
     const GetHashedValue = (tab: number) => {
@@ -72,6 +91,11 @@ const AppWrapper = observer(() => {
     React.useEffect(() => {
         window.addEventListener('focus', checkAndHandleConnection);
         // eslint-disable-next-line react-hooks/exhaustive-deps
+        const path = window.location.pathname;
+        const title = document.title;
+
+        // Send pageview with dynamic path and title
+        ReactGA.send({ hitType: 'pageview', page: path, title: title });
     }, []);
 
     React.useEffect(() => {
@@ -116,7 +140,7 @@ const AppWrapper = observer(() => {
             // Needed to pass this to the Callback Queue as on tab changes
             // document title getting override by 'Binarytool' only
             timer = setTimeout(() => {
-                updateWorkspaceName();
+                updateWorkspaceName(active_tab);
             });
         }
         return () => {
@@ -138,6 +162,15 @@ const AppWrapper = observer(() => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [active_tab]
     );
+
+    const Trader = Loadable({
+        loader: () => import(/* webpackChunkName: "error-component" */ '@deriv/trader'),
+        loading: UILoader,
+        render(loaded, props) {
+            const Component = loaded.default;
+            return <Component passthrough={props} />;
+        },
+    });
 
     return (
         <React.Fragment>
@@ -180,6 +213,21 @@ const AppWrapper = observer(() => {
                         >
                             <BinaryToolsBots handleTabChange={handleTabChange} />
                         </div>
+                        <div
+                            icon='IcChartsTabDbot'
+                            label={<Localize i18n_default_text='Manual' />}
+                            id={
+                                is_chart_modal_visible || is_trading_view_modal_visible
+                                    ? 'id-charts--disabled'
+                                    : 'id-charts'
+                            }
+                        >
+                            <Router>
+                                <Trader {...passthrough} />
+                            </Router>
+                            {/* <Chart show_digits_stats={true}/> */}
+                        </div>
+
                         <div
                             icon='IcCopytrading'
                             label={<Localize i18n_default_text='Copy Trading' />}
@@ -249,13 +297,14 @@ const AppWrapper = observer(() => {
             </div>
             <DesktopWrapper>
                 <div className='main__run-strategy-wrapper'>
-                    <RunStrategy />
-                    <RunPanel />
+                    {active_tab !== CHART && <RunStrategy />}
+                    {active_tab !== CHART && <RunPanel />}
                 </div>
                 <ChartModal />
                 <TradingViewModal />
             </DesktopWrapper>
-            <MobileWrapper>{!is_open && <RunPanel />}</MobileWrapper>
+            {active_tab !== CHART && <MobileWrapper>{!is_open && <RunPanel />}</MobileWrapper>}
+            
             <Dialog
                 cancel_button_text={cancel_button_text || localize('Cancel')}
                 className='dc-dialog__wrapper--fixed'

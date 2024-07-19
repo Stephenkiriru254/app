@@ -19,6 +19,8 @@ type TTradeChartProps = {
 };
 
 const TradeChart = observer((props: TTradeChartProps) => {
+    const whichChart = localStorage.getItem('which_chart');
+    const [active_chart,setActiveChart] = React.useState(whichChart)
     const { has_barrier, is_accumulator, topWidgets } = props;
     const { client, ui, common, contract_trade, portfolio } = useStore();
     const {
@@ -89,6 +91,11 @@ const TradeChart = observer((props: TTradeChartProps) => {
             );
     };
 
+    const saveWhichChart = (name: string) => {
+        localStorage.setItem('which_chart', name);
+        setActiveChart(name);
+    };
+
     const barriers: ChartBarrierStore[] = main_barrier ? [main_barrier, ...extra_barriers] : extra_barriers;
 
     // max ticks to display for mobile view for tick chart
@@ -96,76 +103,94 @@ const TradeChart = observer((props: TTradeChartProps) => {
 
     if (!symbol || !active_symbols.length) return null;
     return (
-        <SmartChart
-            barriers={barriers}
-            contracts_array={markers_array}
-            bottomWidgets={(is_accumulator || show_digits_stats) && isDesktop() ? bottomWidgets : props.bottomWidgets}
-            crosshair={is_mobile ? 0 : undefined}
-            crosshairTooltipLeftAllow={560}
-            showLastDigitStats={show_digits_stats}
-            chartControlsWidgets={null}
-            chartStatusListener={(v: boolean) => setChartStatus(!v)}
-            chartType={chart_type}
-            initialData={{
-                activeSymbols: JSON.parse(JSON.stringify(active_symbols)),
-            }}
-            chartData={{
-                activeSymbols: JSON.parse(JSON.stringify(active_symbols)),
-            }}
-            feedCall={{
-                activeSymbols: false,
-            }}
-            enabledNavigationWidget={isDesktop()}
-            enabledChartFooter={false}
-            id='trade'
-            isMobile={is_mobile}
-            maxTick={is_mobile ? max_ticks : undefined}
-            granularity={show_digits_stats || is_accumulator ? 0 : granularity}
-            requestAPI={wsSendRequest}
-            requestForget={wsForget}
-            requestForgetStream={wsForgetStream}
-            requestSubscribe={wsSubscribe}
-            settings={settings}
-            should_show_eu_content={should_show_eu_content}
-            allowTickChartTypeOnly={show_digits_stats || is_accumulator}
-            stateChangeListener={chartStateChange}
-            symbol={symbol}
-            topWidgets={is_trade_enabled ? topWidgets : null}
-            isConnectionOpened={is_socket_opened}
-            clearChart={false}
-            toolbarWidget={() => {
-                return (
-                    <ToolbarWidgets
-                        updateChartType={updateChartType}
-                        updateGranularity={updateGranularity}
-                        is_mobile={is_mobile}
-                    />
-                );
-            }}
-            importedLayout={chart_layout}
-            onExportLayout={exportLayout}
-            shouldFetchTradingTimes={false}
-            hasAlternativeSource={has_alternative_source}
-            getMarketsOrder={getMarketsOrder}
-            should_zoom_out_on_yaxis={is_accumulator}
-            yAxisMargin={{
-                top: is_mobile ? 76 : 106,
-            }}
-            isLive
-            leftMargin={isDesktop() && is_positions_drawer_on ? 328 : 80}
-        >
-            {is_accumulator && (
-                <AccumulatorsChartElements
-                    all_positions={all_positions}
-                    current_spot={current_spot}
-                    current_spot_time={current_spot_time}
-                    has_crossed_accu_barriers={has_crossed_accu_barriers}
-                    should_show_profit_text={!!accumulator_contract_barriers_data.accumulators_high_barrier}
+        <>
+            {active_chart === 'tradingview' ? (
+                <div className='main_tradingview'>
+                    <iframe
+                        src='https://charts.deriv.com/deriv'
+                        frameBorder='0'
+                        allowFullScreen={true}
+                    ></iframe>
+                </div>
+            ) : (
+                <SmartChart
+                    barriers={barriers}
+                    contracts_array={markers_array}
+                    bottomWidgets={
+                        (is_accumulator || show_digits_stats) && isDesktop() ? bottomWidgets : props.bottomWidgets
+                    }
+                    crosshair={is_mobile ? 0 : undefined}
+                    crosshairTooltipLeftAllow={560}
+                    showLastDigitStats={isDesktop() ? show_digits_stats : false}
+                    chartControlsWidgets={null}
+                    chartStatusListener={(v: boolean) => setChartStatus(!v, true)}
+                    chartType={chart_type}
+                    initialData={{
+                        activeSymbols: JSON.parse(JSON.stringify(active_symbols)),
+                    }}
+                    chartData={{
+                        activeSymbols: JSON.parse(JSON.stringify(active_symbols)),
+                    }}
+                    feedCall={{
+                        activeSymbols: false,
+                    }}
+                    enabledNavigationWidget={isDesktop()}
+                    enabledChartFooter={false}
+                    id='trade'
+                    isMobile={is_mobile}
+                    maxTick={is_mobile ? max_ticks : undefined}
+                    granularity={show_digits_stats || is_accumulator ? 0 : granularity}
+                    requestAPI={wsSendRequest}
+                    requestForget={wsForget}
+                    requestForgetStream={wsForgetStream}
+                    requestSubscribe={wsSubscribe}
+                    settings={settings}
+                    should_show_eu_content={should_show_eu_content}
+                    allowTickChartTypeOnly={show_digits_stats || is_accumulator}
+                    stateChangeListener={chartStateChange}
                     symbol={symbol}
-                    is_mobile={is_mobile}
-                />
+                    topWidgets={is_trade_enabled ? topWidgets : null}
+                    isConnectionOpened={is_socket_opened}
+                    clearChart={false}
+                    toolbarWidget={() => {
+                        return (
+                            <ToolbarWidgets
+                                updateChartType={updateChartType}
+                                updateGranularity={updateGranularity}
+                                is_mobile={is_mobile}
+                            />
+                        );
+                    }}
+                    importedLayout={chart_layout}
+                    onExportLayout={exportLayout}
+                    shouldFetchTradingTimes={false}
+                    hasAlternativeSource={has_alternative_source}
+                    getMarketsOrder={getMarketsOrder}
+                    should_zoom_out_on_yaxis={is_accumulator}
+                    yAxisMargin={{
+                        top: is_mobile ? 76 : 106,
+                    }}
+                    isLive
+                    leftMargin={isDesktop() && is_positions_drawer_on ? 328 : 80}
+                >
+                    {is_accumulator && (
+                        <AccumulatorsChartElements
+                            all_positions={all_positions}
+                            current_spot={current_spot}
+                            current_spot_time={current_spot_time}
+                            has_crossed_accu_barriers={has_crossed_accu_barriers}
+                            should_show_profit_text={!!accumulator_contract_barriers_data.accumulators_high_barrier}
+                            symbol={symbol}
+                            is_mobile={is_mobile}
+                        />
+                    )}
+                </SmartChart>
             )}
-        </SmartChart>
+            <div className='chart_btns'>
+                <button onClick={() => saveWhichChart('deriv')}>Deriv</button>
+                <button onClick={() => saveWhichChart('tradingview')}>Trading View</button>
+            </div>
+        </>
     );
 });
 export default TradeChart;

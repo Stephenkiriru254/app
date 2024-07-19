@@ -8,6 +8,7 @@ import EmptyPortfolioMessage from '../EmptyPortfolioMessage';
 import PositionsModalCard from 'App/Components/Elements/PositionsDrawer/positions-modal-card';
 import TogglePositions from './toggle-positions';
 import { observer, useStore } from '@deriv/stores';
+import { BrowserRouter as Router } from 'react-router-dom';
 
 type TTogglePositionsMobile = Pick<
     ReturnType<typeof useStore>['portfolio'],
@@ -111,7 +112,8 @@ const TogglePositionsMobile = observer(
                             )}
                         </div>
                         <div className='positions-modal__footer'>
-                            <NavLink
+                           <Router>
+                           <NavLink
                                 onClick={closeModal}
                                 className='dc-btn dc-btn--secondary dc-btn__large positions-modal__footer-btn'
                                 to={routes.positions}
@@ -120,6 +122,7 @@ const TogglePositionsMobile = observer(
                                     {localize('Go to Reports')}
                                 </Text>
                             </NavLink>
+                           </Router>
                         </div>
                     </Div100vhContainer>
                 </Modal>
